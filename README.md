@@ -43,10 +43,9 @@ make train
 ```bash
 make setup                         # Install all dependencies
 make download                      # Download dataset from Roboflow
-make train                         # Train YOLOv8 medium (100 epochs)
-make train EPOCHS=50 BATCH=8       # Customize training
-make train-small                   # YOLOv8s (faster)
-make train-large                   # YOLOv8l (more accurate)
+make train                         # Train YOLOv8m (L40S-tuned defaults)
+make train-fast                    # Quick experiment (20 epochs, imgsz 640)
+make train-multi DEVICE="0,1"      # Multi-GPU training
 make eval                          # Evaluate trained model
 make predict SOURCE=image.jpg      # Run inference on an image/folder
 make export                        # Export best.pt to ONNX
@@ -56,20 +55,25 @@ make clean                         # Remove training runs
 ## Train YOLOv8 Medium (custom)
 
 ```bash
-make train MODEL=yolov8m.pt EPOCHS=100 IMG_SIZE=640 BATCH=16 DEVICE=0
+make train MODEL=yolov8m.pt EPOCHS=100 IMG_SIZE=1280 BATCH=-1 DEVICE=0 WORKERS=16
 ```
 
 | Flag | Default | Description |
 | ---- | ------- | ----------- |
 | `MODEL` | `yolov8m.pt` | Base weights |
 | `EPOCHS` | `100` | Training epochs |
-| `IMG_SIZE` | `640` | Input image size |
-| `BATCH` | `16` | Batch size |
-| `DEVICE` | `0` | GPU id, or `cpu` |
+| `IMG_SIZE` | `1280` | Input image size (larger = more accurate, slower) |
+| `BATCH` | `-1` | Batch size (`-1` = auto-select max that fits VRAM) |
+| `DEVICE` | `0` | GPU id, or `0,1,2,3` for multi-GPU, or `cpu` |
+| `WORKERS` | `16` | Data loader workers |
 
 ## GPU Notes
 
-- Training auto-selects GPU with `device=0` (CUDA). For CPU: `make train DEVICE=cpu`.
+- **L40S tuning**: defaults use `imgsz=1280` for higher accuracy, `batch=-1`
+  to auto-fill the 48GB VRAM, and `cache=ram` to prefetch the whole dataset
+  into RAM (fine with 256GB) for faster epochs.
+- Multi-GPU: `make train-multi DEVICE="0,1"` splits batch per GPU.
+- Set `WORKERS` to your CPU core count for maximum data-loading parallelism.
 - YOLOv8 downloads pre-trained COCO weights automatically on first run.
 
 ## Project Structure

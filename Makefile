@@ -4,9 +4,10 @@ PYTHON := python3
 VENV := venv
 MODEL := yolov8m.pt
 EPOCHS := 100
-IMG_SIZE := 640
-BATCH := 16
+IMG_SIZE := 1280
+BATCH := -1
 DEVICE := 0
+WORKERS := 16
 DATA := dataset/data.yaml
 
 help: ## Show this help
@@ -21,20 +22,28 @@ setup: ## Install dependencies and setup environment
 download: ## Download dataset from Roboflow (requires ROBOFLOW_API_KEY)
 	bash scripts/download_dataset.sh
 
-train: ## Train YOLOv8 medium (customizable: make train EPOCHS=50 BATCH=8)
+train: ## Train YOLOv8 medium (L40S defaults: imgsz 1280, batch auto, cache RAM)
 	$(VENV)/bin/python src/train.py train \
 		--model $(MODEL) \
 		--data $(DATA) \
 		--epochs $(EPOCHS) \
 		--imgsz $(IMG_SIZE) \
 		--batch $(BATCH) \
-		--device $(DEVICE)
+		--device $(DEVICE) \
+		--workers $(WORKERS) \
+		--cache ram
 
 train-small: ## Train YOLOv8 small (faster, less accurate)
-	$(VENV)/bin/python src/train.py train --model yolov8s.pt --data $(DATA) --epochs $(EPOCHS) --batch 32
+	$(VENV)/bin/python src/train.py train --model yolov8s.pt --data $(DATA) --epochs $(EPOCHS) --imgsz 1024 --batch -1
 
 train-large: ## Train YOLOv8 large (slower, more accurate)
-	$(VENV)/bin/python src/train.py train --model yolov8l.pt --data $(DATA) --epochs $(EPOCHS) --batch 8
+	$(VENV)/bin/python src/train.py train --model yolov8l.pt --data $(DATA) --epochs $(EPOCHS) --imgsz 1280 --batch -1
+
+train-fast: ## Quick experiment: fewer epochs, smaller imgsz
+	$(VENV)/bin/python src/train.py train --model $(MODEL) --data $(DATA) --epochs 20 --imgsz 640 --batch -1
+
+train-multi: ## Multi-GPU training (make train-multi DEVICE="0,1" EPOCHS=100)
+	$(VENV)/bin/python src/train.py train --model $(MODEL) --data $(DATA) --epochs $(EPOCHS) --device "$(DEVICE)" --workers $(WORKERS) --cache ram
 
 eval: ## Evaluate trained model
 	$(VENV)/bin/python src/train.py eval --model runs/autorickshaw/weights/best.pt --data $(DATA)
