@@ -12,18 +12,52 @@ else
     SUDO="sudo"
 fi
 
-# Install system dependencies
+# ultralytics requires Python 3.8+. Rocky 8 defaults to 3.6, which is too old.
+# Prefer the newest available python3.x (3.11/3.12/3.9) via dnf.
 echo "[1/5] Installing system dependencies..."
-$SUDO dnf install -y python3 python3-pip git wget unzip
+$SUDO dnf install -y git wget unzip
+
+PY=""
+for cand in python3.12 python3.11 python3.10 python3.9 python3.8; do
+    if command -v $cand &> /dev/null; then
+        PY=$cand
+        break
+    fi
+done
+
+if [ -z "$PY" ]; then
+    echo "Looking for a modern Python package (needs >= 3.8)..."
+    # Enable python3.11 module/tools on Rocky 8/9
+    if $SUDO dnf module list python3* 2>/dev/null | grep -q python39; then
+        $SUDO dnf module install -y python39 2>/dev/null || $SUDO dnf install -y python39 python39-pip
+        PY="python3.9"
+    else
+        # Fallback: ensure at least python3 exists
+        $SUDO dnf install -y python3 python3-pip
+        PY="python3"
+    fi
+fi
+
+echo "  Using Python: $PY ($($PY --version 2>&1))"
+
+# Verify version is >= 3.8
+PY_MAJOR=$($PY -c 'import sys; print(sys.version_info.major)')
+PY_MINOR=$($PY -c 'import sys; print(sys.version_info.minor)')
+if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 8 ]; }; then
+    echo "ERROR: $PY is Python $PY_MAJOR.$PY_MINOR, but ultralytics needs >= 3.8."
+    echo "Install a newer Python (>= 3.8), e.g.:"
+    echo "  sudo dnf module install -y python39"
+    exit 1
+fi
 
 # Create virtual environment
 echo "[2/5] Creating virtual environment..."
-python3 -m venv venv
+$PY -m venv venv
 source venv/bin/activate
+pip install --upgrade pip
 
 # Install Python packages
 echo "[3/5] Installing Python packages..."
-pip install --upgrade pip
 pip install -r requirements.txt
 
 # Setup Roboflow API credentials

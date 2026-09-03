@@ -14,8 +14,8 @@ Fine-tune **YOLOv8 medium** to detect auto rickshaws on a Rocky Linux server.
 
 ## Requirements
 
-- Rocky Linux server
-- Python 3.9+
+- Rocky Linux server (setup auto-installs Python 3.9+)
+- Python 3.8+ (ultralytics requirement)
 - Free Roboflow account (for API key)
 
 ## Quick Start
