@@ -14,9 +14,13 @@ if [ -x "venv/bin/python" ]; then
     PYTHON="venv/bin/python"
 fi
 
-# Check roboflow package
-if ! "$PYTHON" -c "import roboflow" 2>/dev/null; then
-    echo "Error: roboflow package not found. Run: make setup"
+echo "  Using Python: $($PYTHON --version 2>&1) at $PYTHON"
+
+# Check roboflow package (show the real error if import fails)
+if ! "$PYTHON" -c "import roboflow; print('  roboflow', roboflow.__version__)" 2>&1; then
+    echo ""
+    echo "Error: roboflow could not be imported with $PYTHON."
+    echo "Run 'make setup' to (re)install dependencies into the venv."
     exit 1
 fi
 
