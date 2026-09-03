@@ -40,9 +40,10 @@ echo "[1/3] Downloading dataset from Roboflow..."
 rm -rf dataset
 mkdir -p dataset
 
-"$PYTHON" << 'EOF' > /tmp/rf_var.sh
+"$PYTHON" << 'EOF'
 from roboflow import Roboflow
 import os
+from pathlib import Path
 
 key = os.environ["ROBOFLOW_API_KEY"]
 rf = Roboflow(api_key=key)
@@ -52,10 +53,11 @@ dataset = version.download("yolov8", location="./dataset")
 
 loc = os.path.abspath(dataset.location)
 print(f"Dataset downloaded to: {loc}")
-print(f'export RF_LOCATION="{loc}"')
+# Write location to a file directly (roboflow emits \r progress on stdout)
+Path("/tmp/rf_location.txt").write_text(loc)
 EOF
-# shellcheck disable=SC1091
-source /tmp/rf_var.sh
+
+RF_LOCATION="$(cat /tmp/rf_location.txt)"
 
 echo ""
 echo "  Raw layout (max depth 2):"
