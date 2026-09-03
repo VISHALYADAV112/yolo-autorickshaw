@@ -7,6 +7,7 @@ EPOCHS := 100
 IMG_SIZE := 640
 BATCH := 16
 DEVICE := 0
+DATA := dataset/data.yaml
 
 help: ## Show this help
 	@echo "Usage: make <command>"
@@ -23,19 +24,20 @@ download: ## Download dataset from Roboflow (requires ROBOFLOW_API_KEY)
 train: ## Train YOLOv8 medium (customizable: make train EPOCHS=50 BATCH=8)
 	$(VENV)/bin/python src/train.py train \
 		--model $(MODEL) \
+		--data $(DATA) \
 		--epochs $(EPOCHS) \
 		--imgsz $(IMG_SIZE) \
 		--batch $(BATCH) \
 		--device $(DEVICE)
 
 train-small: ## Train YOLOv8 small (faster, less accurate)
-	$(VENV)/bin/python src/train.py train --model yolov8s.pt --epochs $(EPOCHS) --batch 32
+	$(VENV)/bin/python src/train.py train --model yolov8s.pt --data $(DATA) --epochs $(EPOCHS) --batch 32
 
 train-large: ## Train YOLOv8 large (slower, more accurate)
-	$(VENV)/bin/python src/train.py train --model yolov8l.pt --epochs $(EPOCHS) --batch 8
+	$(VENV)/bin/python src/train.py train --model yolov8l.pt --data $(DATA) --epochs $(EPOCHS) --batch 8
 
 eval: ## Evaluate trained model
-	$(VENV)/bin/python src/train.py eval --model runs/autorickshaw/weights/best.pt
+	$(VENV)/bin/python src/train.py eval --model runs/autorickshaw/weights/best.pt --data $(DATA)
 
 predict: ## Run inference on image/folder (make predict SOURCE=path/to/image)
 	$(VENV)/bin/python src/train.py predict --model runs/autorickshaw/weights/best.pt --source $(SOURCE)

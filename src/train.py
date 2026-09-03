@@ -5,7 +5,7 @@ from ultralytics import YOLO
 
 def train(
     model_size="yolov8m.pt",
-    data_config="configs/data.yaml",
+    data_config="dataset/data.yaml",
     epochs=100,
     imgsz=640,
     batch=16,
@@ -51,7 +51,7 @@ def train(
     return results
 
 
-def evaluate(model_path, data_config="configs/data.yaml", device="0"):
+def evaluate(model_path, data_config="dataset/data.yaml", device="0"):
     print(f"Evaluating model: {model_path}")
     model = YOLO(model_path)
     results = model.val(data=data_config, device=device)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # Train command
     train_parser = subparsers.add_parser("train", help="Train the model")
     train_parser.add_argument("--model", default="yolov8m.pt", help="Base model (default: yolov8m.pt)")
-    train_parser.add_argument("--data", default="configs/data.yaml", help="Data config path")
+    train_parser.add_argument("--data", default="dataset/data.yaml", help="Data config path")
     train_parser.add_argument("--epochs", type=int, default=100, help="Number of epochs")
     train_parser.add_argument("--imgsz", type=int, default=640, help="Image size")
     train_parser.add_argument("--batch", type=int, default=16, help="Batch size")
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     # Eval command
     eval_parser = subparsers.add_parser("eval", help="Evaluate the model")
     eval_parser.add_argument("--model", required=True, help="Path to model weights")
-    eval_parser.add_argument("--data", default="configs/data.yaml", help="Data config path")
+    eval_parser.add_argument("--data", default="dataset/data.yaml", help="Data config path")
     eval_parser.add_argument("--device", default="0", help="Device")
 
     # Predict command

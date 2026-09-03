@@ -2,10 +2,10 @@
 set -e
 
 echo "========================================="
-echo "  Downloading Autorickshaw Dataset"
+echo "  Downloading Auto-Rickshaw Dataset"
 echo "  Source: Roboflow Universe (CC BY 4.0)"
-echo "  Dataset: Auto rickshaw by VIT"
-echo "  1,941 images, YOLO format"
+echo "  Dataset: Auto-Rickshaw - 4514 images"
+echo "  Project: autorickshaw-detection/auto-rickshaw-9fpsm (v3)"
 echo "========================================="
 
 # Activate virtual environment if present
@@ -23,53 +23,90 @@ fi
 if [ -z "$ROBOFLOW_API_KEY" ]; then
     echo "Error: ROBOFLOW_API_KEY not set."
     echo ""
-    echo "  1. Go to https://app.roboflow.com (free signup)"
-    echo "  2. Click your username -> Settings -> API Key"
-    echo "  3. Run: export ROBOFLOW_API_KEY=your_key"
+    echo "  1. Create a free account at https://app.roboflow.com"
+    echo "  2. Click your username -> Settings -> API Key (copy it)"
+    echo "  3. Run: export ROBOFLOW_API_KEY=your_key_here"
+    echo "     # add to ~/.bashrc to persist"
     exit 1
 fi
 
-# Download dataset using Roboflow
+# Download dataset
 echo "[1/3] Downloading dataset from Roboflow..."
+rm -rf dataset
 mkdir -p dataset
 
-python3 -c "
+python3 << 'EOF'
 from roboflow import Roboflow
+import os
 
-rf = Roboflow(api_key='${ROBOFLOW_API_KEY}')
-project = rf.workspace('vit-0mr4g').project('auto-rickshaw-oobkc')
-version = project.version(9)
-dataset = version.download('yolov8', location='./dataset')
+key = os.environ["ROBOFLOW_API_KEY"]
+rf = Roboflow(api_key=key)
+project = rf.workspace("autorickshaw-detection").project("auto-rickshaw-9fpsm")
+version = project.version(3)
+dataset = version.download("yolov8", location="./dataset")
 
-print(f'Dataset downloaded to: {dataset.location}')
-print(f'Classes: {dataset.classes}')
-"
+print(f"Dataset downloaded to: {dataset.location}")
+EOF
 
-# Check if dataset needs restructuring
-echo "[2/3] Checking dataset structure..."
-if [ -d "dataset/train" ] && [ -d "dataset/valid" ]; then
-    echo "  Roboflow format detected (train/valid/test)"
-    # Rename valid -> val for YOLO compatibility
-    if [ -d "dataset/valid" ] && [ ! -d "dataset/val" ]; then
-        mv dataset/valid dataset/val
-        echo "  Renamed 'valid' -> 'val'"
-    fi
-    # Check for test set and merge into val if small
-    if [ -d "dataset/test" ]; then
-        TEST_COUNT=$(find dataset/test -name "*.jpg" -o -name "*.png" | wc -l)
-        echo "  Test set has $TEST_COUNT images (will be used for validation)"
-    fi
-fi
+echo "[2/3] Normalizing dataset structure..."
+python3 << 'EOF'
+import os
+from pathlib import Path
+
+dataset_dir = Path("./dataset")
+
+# Roboflow may extract into a nested project subfolder, e.g. <slug>-<version>/
+# Detect it: the folder that itself contains data.yaml
+nested = None
+for p in dataset_dir.iterdir():
+    if p.is_dir() and (p / "data.yaml").exists():
+        nested = p
+        break
+
+if nested is not None:
+    print(f"  Flattening nested folder: {nested.name}")
+    for item in nested.iterdir():
+        dest = dataset_dir / item.name
+        if not dest.exists():
+            item.rename(dest)
+    nested.rmdir()
+
+# Rename valid -> val (YOLO/ultralytics default)
+valid_dir = dataset_dir / "valid"
+val_dir = dataset_dir / "val"
+if valid_dir.exists() and not val_dir.exists():
+    valid_dir.rename(val_dir)
+    print("  Renamed valid -> val")
+
+# Rewrite data.yaml paths to be relative to the dataset/ directory
+# (ultralytics resolves relative paths against the yaml file's folder)
+yaml_file = dataset_dir / "data.yaml"
+if yaml_file.exists():
+    lines = yaml_file.read_text().splitlines()
+    out = []
+    for line in lines:
+        if line.startswith("train:"):
+            out.append("train: train/images")
+        elif line.startswith("val:"):
+            out.append("val: val/images")
+        else:
+            out.append(line)
+    yaml_file.write_text("\n".join(out) + "\n")
+    print("  data.yaml paths fixed")
+
+print("  Structure:")
+for p in sorted(dataset_dir.iterdir()):
+    if p.is_dir():
+        print(f"    {p.name}/")
+    else:
+        print(f"    {p.name}")
+EOF
 
 echo "[3/3] Dataset ready!"
 echo ""
-echo "Dataset structure:"
-ls -la dataset/
+echo "Train images: $(find dataset/train/images -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
+echo "Val images:   $(find dataset/val/images -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
 echo ""
-echo "Train images: $(find dataset/train -name '*.jpg' -o -name '*.png' 2>/dev/null | wc -l)"
-echo "Val images: $(find dataset/val -name '*.jpg' -o -name '*.png' 2>/dev/null | wc -l)"
-if [ -d "dataset/test" ]; then
-    echo "Test images: $(find dataset/test -name '*.jpg' -o -name '*.png' 2>/dev/null | wc -l)"
-fi
+echo "Classes: $(grep -A1 names dataset/data.yaml | tail -1)"
 echo ""
 echo "Run 'make train' to start training."

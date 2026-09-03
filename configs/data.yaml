@@ -1,5 +1,7 @@
+# Fallback config template - the download script generates dataset/data.yaml
+# with the correct class names from Roboflow, which is what training uses.
 train: ../dataset/train/images
 val: ../dataset/val/images
 
 nc: 1
-names: ["autorickshaw"]
+names: ["Auto Rickshaw"]
