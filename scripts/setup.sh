@@ -50,10 +50,13 @@ if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 8 ]; };
     exit 1
 fi
 
-# Create virtual environment
+# Create virtual environment (remove any stale one so the interpreter
+# symlinks are recreated; 'python -m venv' on an existing dir keeps the old).
 echo "[2/5] Creating virtual environment..."
+rm -rf venv
 $PY -m venv venv
 source venv/bin/activate
+echo "  venv Python: $(python --version 2>&1)"
 pip install --upgrade pip
 
 # Install Python packages
