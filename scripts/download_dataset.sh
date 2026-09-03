@@ -46,13 +46,17 @@ import os
 from pathlib import Path
 
 key = os.environ["ROBOFLOW_API_KEY"]
+# Use an absolute location so extraction lands predictably
+target = os.path.abspath("./dataset")
+
 rf = Roboflow(api_key=key)
 project = rf.workspace("autorickshaw-detection").project("auto-rickshaw-9fpsm")
 version = project.version(3)
-dataset = version.download("yolov8", location="./dataset")
+dataset = version.download("yolov8", location=target)
 
 loc = os.path.abspath(dataset.location)
 print(f"Dataset downloaded to: {loc}")
+print(f"  files in location: {len(list(Path(loc).rglob('*')))}")
 # Write location to a file directly (roboflow emits \r progress on stdout)
 Path("/tmp/rf_location.txt").write_text(loc)
 EOF
@@ -60,9 +64,22 @@ EOF
 RF_LOCATION="$(cat /tmp/rf_location.txt)"
 
 echo ""
-echo "  Raw layout (max depth 2):"
-find "$RF_LOCATION" -maxdepth 2 2>/dev/null | head -40
+echo "  Raw layout (location, max depth 3):"
+find "$RF_LOCATION" -maxdepth 3 2>/dev/null | head -60
 echo ""
+
+# If the returned location is empty, search the whole filesystem for the data
+if [ -z "$(find "$RF_LOCATION" -mindepth 1 2>/dev/null)" ]; then
+    echo "  NOTE: $RF_LOCATION is empty! Searching filesystem for the dataset..."
+    echo "  (candidate data.yaml files:)"
+    find / -name "data.yaml" -path "*uto*" 2>/dev/null | head -10
+    echo "  (candidate train/image dirs:)"
+    find / -type d -path "*train/images" 2>/dev/null | head -10
+    echo ""
+    echo "  -> If the above find nothing in /home/vishal, the download produced"
+    echo "     no files. Re-run with 'make setup' if needed, or report the"
+    echo "     'files in location' count from the download step."
+fi
 
 echo "[2/3] Normalizing dataset structure..."
 RF_LOCATION="$RF_LOCATION" "$PYTHON" << 'EOF'
