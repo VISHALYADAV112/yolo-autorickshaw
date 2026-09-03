@@ -8,13 +8,14 @@ echo "  Dataset: Auto-Rickshaw - 4514 images"
 echo "  Project: autorickshaw-detection/auto-rickshaw-9fpsm (v3)"
 echo "========================================="
 
-# Activate virtual environment if present
-if [ -f "venv/bin/activate" ]; then
-    source venv/bin/activate
+# Use the project venv directly (no activation needed)
+PYTHON="python3"
+if [ -x "venv/bin/python" ]; then
+    PYTHON="venv/bin/python"
 fi
 
 # Check roboflow package
-if ! python3 -c "import roboflow" 2>/dev/null; then
+if ! "$PYTHON" -c "import roboflow" 2>/dev/null; then
     echo "Error: roboflow package not found. Run: make setup"
     exit 1
 fi
@@ -35,7 +36,7 @@ echo "[1/3] Downloading dataset from Roboflow..."
 rm -rf dataset
 mkdir -p dataset
 
-python3 << 'EOF'
+"$PYTHON" << 'EOF'
 from roboflow import Roboflow
 import os
 
@@ -49,7 +50,7 @@ print(f"Dataset downloaded to: {dataset.location}")
 EOF
 
 echo "[2/3] Normalizing dataset structure..."
-python3 << 'EOF'
+"$PYTHON" << 'EOF'
 import os
 from pathlib import Path
 
@@ -93,6 +94,9 @@ if yaml_file.exists():
             out.append(line)
     yaml_file.write_text("\n".join(out) + "\n")
     print("  data.yaml paths fixed")
+    print()
+    print("  data.yaml:")
+    print(yaml_file.read_text())
 
 print("  Structure:")
 for p in sorted(dataset_dir.iterdir()):
@@ -106,7 +110,5 @@ echo "[3/3] Dataset ready!"
 echo ""
 echo "Train images: $(find dataset/train/images -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
 echo "Val images:   $(find dataset/val/images -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
-echo ""
-echo "Classes: $(grep -A1 names dataset/data.yaml | tail -1)"
 echo ""
 echo "Run 'make train' to start training."
