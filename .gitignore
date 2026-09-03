@@ -1,0 +1,36 @@
+# Dataset
+dataset/
+*.zip
+*.tar.gz
+
+# Kaggle
+kaggle.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+venv/
+.venv/
+env/
+
+# YOLO runs
+runs/
+*.pt
+*.onnx
+*.engine
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
