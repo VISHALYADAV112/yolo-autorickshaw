@@ -40,7 +40,7 @@ echo "[1/3] Downloading dataset from Roboflow..."
 rm -rf dataset
 mkdir -p dataset
 
-"$PYTHON" << 'EOF'
+"$PYTHON" << 'EOF' > /tmp/rf_var.sh
 from roboflow import Roboflow
 import os
 
@@ -50,15 +50,25 @@ project = rf.workspace("autorickshaw-detection").project("auto-rickshaw-9fpsm")
 version = project.version(3)
 dataset = version.download("yolov8", location="./dataset")
 
-print(f"Dataset downloaded to: {dataset.location}")
+loc = os.path.abspath(dataset.location)
+print(f"Dataset downloaded to: {loc}")
+print(f'export RF_LOCATION="{loc}"')
 EOF
+# shellcheck disable=SC1091
+source /tmp/rf_var.sh
+
+echo ""
+echo "  Raw layout (max depth 2):"
+find "$RF_LOCATION" -maxdepth 2 2>/dev/null | head -40
+echo ""
 
 echo "[2/3] Normalizing dataset structure..."
-"$PYTHON" << 'EOF'
+RF_LOCATION="$RF_LOCATION" "$PYTHON" << 'EOF'
 import os
 from pathlib import Path
 
-dataset_dir = Path("./dataset")
+dataset_dir = Path(os.environ["RF_LOCATION"])
+print(f"  Normalizing: {dataset_dir}")
 
 # Roboflow may extract into a nested project subfolder, e.g. <slug>-<version>/
 # Detect it: the folder that itself contains data.yaml
@@ -83,8 +93,7 @@ if valid_dir.exists() and not val_dir.exists():
     valid_dir.rename(val_dir)
     print("  Renamed valid -> val")
 
-# Rewrite data.yaml paths to be relative to the dataset/ directory
-# (ultralytics resolves relative paths against the yaml file's folder)
+# Rewrite data.yaml paths to be relative to the dataset directory
 yaml_file = dataset_dir / "data.yaml"
 if yaml_file.exists():
     lines = yaml_file.read_text().splitlines()
@@ -98,9 +107,12 @@ if yaml_file.exists():
             out.append(line)
     yaml_file.write_text("\n".join(out) + "\n")
     print("  data.yaml paths fixed")
-    print()
     print("  data.yaml:")
     print(yaml_file.read_text())
+else:
+    print("  WARNING: no data.yaml found in dataset dir")
+    for p in dataset_dir.rglob("data.yaml"):
+        print(f"    found nested yaml: {p}")
 
 print("  Structure:")
 for p in sorted(dataset_dir.iterdir()):
@@ -112,7 +124,8 @@ EOF
 
 echo "[3/3] Dataset ready!"
 echo ""
-echo "Train images: $(find dataset/train/images -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
-echo "Val images:   $(find dataset/val/images -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
+echo "  Location: $RF_LOCATION"
+echo "  Train images: $(find "$RF_LOCATION/train/images" -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
+echo "  Val images:   $(find "$RF_LOCATION/val/images" -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' \) 2>/dev/null | wc -l | tr -d ' ')"
 echo ""
 echo "Run 'make train' to start training."
