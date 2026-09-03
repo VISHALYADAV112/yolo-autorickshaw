@@ -46,13 +46,15 @@ import os
 from pathlib import Path
 
 key = os.environ["ROBOFLOW_API_KEY"]
-# Use an absolute location so extraction lands predictably
+# Use an absolute location so extraction lands predictably.
+# IMPORTANT: overwrite=True is required by roboflow>=1.4 -- if the dir already
+# exists and overwrite=False, it silently returns without downloading anything.
 target = os.path.abspath("./dataset")
 
 rf = Roboflow(api_key=key)
 project = rf.workspace("autorickshaw-detection").project("auto-rickshaw-9fpsm")
 version = project.version(3)
-dataset = version.download("yolov8", location=target)
+dataset = version.download("yolov8", location=target, overwrite=True)
 
 loc = os.path.abspath(dataset.location)
 print(f"Dataset downloaded to: {loc}")
