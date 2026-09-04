@@ -1,4 +1,4 @@
-.PHONY: setup download train eval predict clean help
+.PHONY: setup download train train-bg eval predict clean help
 
 PYTHON := python3
 VENV := venv
@@ -32,6 +32,18 @@ train: ## Train YOLOv8 medium (L40S defaults: imgsz 1280, batch auto, cache RAM)
 		--device $(DEVICE) \
 		--workers $(WORKERS) \
 		--cache ram
+
+train-bg: ## Train in background (survives SSH disconnect): nohup + log to train.log
+	nohup $(VENV)/bin/python src/train.py train \
+		--model $(MODEL) \
+		--data $(DATA) \
+		--epochs $(EPOCHS) \
+		--imgsz $(IMG_SIZE) \
+		--batch $(BATCH) \
+		--device $(DEVICE) \
+		--workers $(WORKERS) \
+		--cache ram > train.log 2>&1 &
+	@echo "Training started in background (PID $$!). Watch: tail -f train.log"
 
 train-small: ## Train YOLOv8 small (faster, less accurate)
 	$(VENV)/bin/python src/train.py train --model yolov8s.pt --data $(DATA) --epochs $(EPOCHS) --imgsz 1024 --batch -1
