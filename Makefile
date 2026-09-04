@@ -1,4 +1,4 @@
-.PHONY: setup download train train-bg eval predict clean help
+.PHONY: setup download train train-bg eval predict dashboard dashboard-bg export clean help
 
 PYTHON := python3
 VENV := venv
@@ -9,6 +9,8 @@ BATCH := -1
 DEVICE := 0
 WORKERS := 16
 DATA := dataset/data.yaml
+PORT := 7860
+HOST := $(shell hostname -I 2>/dev/null | awk '{print $$1}')
 
 help: ## Show this help
 	@echo "Usage: make <command>"
@@ -62,6 +64,13 @@ eval: ## Evaluate trained model
 
 predict: ## Run inference on image/folder (make predict SOURCE=path/to/image)
 	$(VENV)/bin/python src/train.py predict --model runs/autorickshaw/weights/best.pt --source $(SOURCE)
+
+dashboard: ## Launch Gradio web dashboard for testing (Open http://SERVER:7860)
+	$(VENV)/bin/python app.py --model runs/autorickshaw/weights/best.pt --host 0.0.0.0 --port $(PORT)
+
+dashboard-bg: ## Run dashboard in background on port 7860 (survives disconnect)
+	nohup $(VENV)/bin/python app.py --model runs/autorickshaw/weights/best.pt --host 0.0.0.0 --port 7860 > dashboard.log 2>&1 &
+	@echo "Dashboard started at http://$(HOST):7860  (log: dashboard.log)"
 
 export: ## Export model to ONNX
 	$(VENV)/bin/python -c "from ultralytics import YOLO; YOLO('runs/autorickshaw/weights/best.pt').export(format='onnx', imgsz=$(IMG_SIZE))"
