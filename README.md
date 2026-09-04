@@ -81,12 +81,14 @@ make train MODEL=yolov8m.pt EPOCHS=100 IMG_SIZE=1280 BATCH=-1 DEVICE=0 WORKERS=1
 ```
 ├── Makefile              # Command shortcuts
 ├── requirements.txt      # Python dependencies
+├── app.py                # Gradio test dashboard
 ├── configs/data.yaml     # Fallback dataset config template
 ├── scripts/
 │   ├── setup.sh          # One-time server setup
 │   └── download_dataset.sh  # Fetch dataset + normalize to YOLO format
 └── src/
-    └── train.py          # Train / eval / predict CLI
+    ├── train.py          # Train / eval / predict CLI
+    └── export.py         # Export to edge formats (ONNX/TensorRT/int8)
 ```
 
 ## Output
@@ -98,3 +100,35 @@ runs/autorickshaw/weights/best.pt   # Best model
 runs/autorickshaw/weights/last.pt   # Last epoch model
 runs/autorickshaw/results.png       # Loss + metric plots
 ```
+
+## Testing Dashboard
+
+```bash
+make dashboard-bg        # run background on port 7860 (survives disconnect)
+```
+Open `http://<server-ip>:7860` and upload/webcam images. If behind a VPN,
+tunnel with `ssh -L 7860:localhost:7860 user@server` and open
+`http://localhost:7860`.
+
+## Edge Deployment
+
+Deploy as a **single model** (never run two YOLO models on an edge device):
+
+```bash
+# Portable ONNX (works everywhere)
+make export-onnx
+
+# int8 quantized ONNX (~4x smaller, fast on CPU/NPU)
+make export-int8
+
+# TensorRT engine (NVIDIA Jetson / edge GPU)
+make export-tensorrt
+
+# Benchmark an exported format by FPS/latency
+make benchmark FORMAT=onnx
+```
+
+The exported files land next to the weights
+(`runs/autorickshaw/weights/best_<fmt>/`). Choose the export matching your
+hardware; pick compute budget first (small/medium/large) at training time,
+then quantize/compile per device.
