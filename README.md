@@ -85,7 +85,8 @@ make train MODEL=yolov8m.pt EPOCHS=100 IMG_SIZE=1280 BATCH=-1 DEVICE=0 WORKERS=1
 ├── configs/data.yaml     # Fallback dataset config template
 ├── scripts/
 │   ├── setup.sh          # One-time server setup
-│   └── download_dataset.sh  # Fetch dataset + normalize to YOLO format
+│   ├── download_dataset.sh  # Fetch dataset + normalize to YOLO format
+│   └── build_multiclass_dataset.sh  # Merge custom + COCO subset into 81-class dataset
 └── src/
     ├── train.py          # Train / eval / predict CLI
     └── export.py         # Export to edge formats (ONNX/TensorRT/int8)
@@ -109,6 +110,32 @@ make dashboard-bg        # run background on port 7860 (survives disconnect)
 Open `http://<server-ip>:7860` and upload/webcam images. If behind a VPN,
 tunnel with `ssh -L 7860:localhost:7860 user@server` and open
 `http://localhost:7860`.
+
+## 81-class Model (COCO + Auto Rickshaw)
+
+The single-class model only detects rickshaws. To also detect general
+objects, train one model on **80 COCO classes + Auto Rickshaw** (class 80):
+
+```bash
+# 1) Merge custom 10k rickshaw dataset + representative COCO subset (~1GB)
+make build-dataset81
+
+# 2) Fine-tune a COCO-pretrained model on all 81 classes (~6h on L40S)
+make train81-bg          # or: make train81   (foreground)
+tail -f train81.log
+```
+
+How it works:
+- Downloads `val2017` (5,000 images, ~1GB) as the **rehearsal subset** —
+  enough to stop the 80 pretrained COCO classes from being "forgotten"
+  during fine-tuning, without pulling the 19GB COCO train set.
+- Custom rickshaw labels (class 0) are remapped to **class 80**; COCO stays
+  0-79. Output is `dataset81/` with an 81-class `data.yaml`.
+- Fine-tune on the merged data and the model keeps COCO knowledge, so the
+  final ONNX export knows all 81 classes for your edge hardware.
+
+For stronger COCO accuracy you can raise the subset size later (e.g. sample
+from `train2017`), at the cost of disk/download.
 
 ## Edge Deployment
 

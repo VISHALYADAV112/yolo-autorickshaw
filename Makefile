@@ -1,4 +1,4 @@
-.PHONY: setup download train train-bg eval predict dashboard dashboard-bg export clean help
+.PHONY: setup download build-dataset81 train train81 train-bg train81-bg eval predict dashboard dashboard-bg export clean help
 
 PYTHON := python3
 VENV := venv
@@ -17,13 +17,41 @@ help: ## Show this help
 	@echo "Usage: make <command>"
 	@echo ""
 	@echo "Commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
 
 setup: ## Install dependencies and setup environment
 	bash scripts/setup.sh
 
 download: ## Download dataset from Roboflow (requires ROBOFLOW_API_KEY)
 	bash scripts/download_dataset.sh
+
+build-dataset81: ## Build 81-class dataset: custom rickshaw + COCO rehearsal subset (~1GB download)
+	bash scripts/build_multiclass_dataset.sh
+
+train81: ## Train 81-class model: 80 COCO + Auto Rickshaw (pretrained yolov8m COCO base)
+	$(VENV)/bin/python src/train.py train \
+		--model $(MODEL) \
+		--data dataset81/data.yaml \
+		--name autorickshaw81 \
+		--epochs $(EPOCHS) \
+		--imgsz $(IMG_SIZE) \
+		--batch $(BATCH) \
+		--device $(DEVICE) \
+		--workers $(WORKERS) \
+		--cache ram
+
+train81-bg: ## Train 81-class model in background (survives SSH disconnect) -> train81.log
+	nohup $(VENV)/bin/python src/train.py train \
+		--model $(MODEL) \
+		--data dataset81/data.yaml \
+		--name autorickshaw81 \
+		--epochs $(EPOCHS) \
+		--imgsz $(IMG_SIZE) \
+		--batch $(BATCH) \
+		--device $(DEVICE) \
+		--workers $(WORKERS) \
+		--cache ram > train81.log 2>&1 &
+	@echo "Training started in background (PID $$!). Watch: tail -f train81.log"
 
 train: ## Train YOLOv8 medium (L40S defaults: imgsz 1280, batch auto, cache RAM)
 	$(VENV)/bin/python src/train.py train \

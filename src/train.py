@@ -16,7 +16,7 @@ def train(
     project="runs",
     name="autorickshaw",
 ):
-    print(f"Training YOLOv8 for autorickshaw detection")
+    print(f"Training YOLOv8 for {name} detection")
     print(f"  Model: {model_size}")
     print(f"  Epochs: {epochs}")
     print(f"  Image size: {imgsz}")
@@ -98,6 +98,7 @@ if __name__ == "__main__":
     train_parser.add_argument("--device", default="0", help="Device: '0', '0,1,2,3' for multi-GPU, 'cpu'")
     train_parser.add_argument("--workers", type=int, default=16, help="Data loader workers")
     train_parser.add_argument("--cache", default="ram", help="Cache mode: 'ram', 'disk', False")
+    train_parser.add_argument("--name", default="autorickshaw", help="Run output folder name")
 
     # Eval command
     eval_parser = subparsers.add_parser("eval", help="Evaluate the model")
@@ -127,6 +128,7 @@ if __name__ == "__main__":
             device=args.device,
             workers=args.workers,
             cache=args.cache,
+            name=args.name,
         )
     elif args.command == "eval":
         evaluate(args.model, args.data, args.device, args.imgsz)
