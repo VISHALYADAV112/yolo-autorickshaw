@@ -24,18 +24,23 @@ fi
 echo "[2/4] Downloading COCO labels + val2017 images"
 mkdir -p "$WORK"
 cd "$WORK"
-if [ ! -d "labels/val2017" ]; then
+COCO_LABELS="$WORK/coco/labels/val2017"   # nested under coco/ in coco2017labels.zip
+[ ! -d "$COCO_LABELS" ] && COCO_LABELS="$WORK/labels/val2017"   # legacy flat fallback
+if [ ! -d "$COCO_LABELS" ]; then
   curl -fL "$LABELS_URL" -o coco2017labels.zip
   unzip -q -o coco2017labels.zip -d .
+  # resolve whichever layout was extracted
+  if [ -d "$WORK/coco/labels/val2017" ]; then COCO_LABELS="$WORK/coco/labels/val2017"; fi
 fi
 if [ ! -d "val2017" ]; then
   curl -fL "$IMAGES_URL" -o val2017.zip
   unzip -q -o val2017.zip -d .
 fi
-echo "  labels: $(ls labels/val2017 | wc -l) txt | images: $(ls val2017 | wc -l) jpg"
+echo "  labels: $(ls "$COCO_LABELS" | wc -l) txt | images: $(ls val2017 | wc -l) jpg"
+echo "  labels dir: $COCO_LABELS"
 
 echo "[3/4] Merging into 81-class dataset ($OUT)"
-"$PY" - "$CUSTOM" "$OUT" "$WORK/labels/val2017" "$WORK/val2017" "$COCO_SUBSET" "$COCO_VAL" <<'PYEOF'
+"$PY" - "$CUSTOM" "$OUT" "$COCO_LABELS" "$WORK/val2017" "$COCO_SUBSET" "$COCO_VAL" <<'PYEOF'
 import random
 import shutil
 import sys
