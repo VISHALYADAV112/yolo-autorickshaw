@@ -15,7 +15,17 @@ def train(
     cache="ram",
     project="runs",
     name="autorickshaw",
+    resume=None,
 ):
+    if resume is not None:
+        print(f"Resuming training from checkpoint: {resume}")
+        model = YOLO(resume)
+        results = model.train(resume=True, project=project, name=name, exist_ok=True)
+        print()
+        print(f"Training resumed and complete!")
+        print(f"Best model saved to: {project}/{name}/weights/best.pt")
+        return results
+
     print(f"Training YOLOv8 for {name} detection")
     print(f"  Model: {model_size}")
     print(f"  Epochs: {epochs}")
@@ -99,6 +109,7 @@ if __name__ == "__main__":
     train_parser.add_argument("--workers", type=int, default=16, help="Data loader workers")
     train_parser.add_argument("--cache", default="ram", help="Cache mode: 'ram', 'disk', False")
     train_parser.add_argument("--name", default="autorickshaw", help="Run output folder name")
+    train_parser.add_argument("--resume", default=None, help="Resume training from weights/last.pt checkpoint")
 
     # Eval command
     eval_parser = subparsers.add_parser("eval", help="Evaluate the model")
@@ -129,6 +140,7 @@ if __name__ == "__main__":
             workers=args.workers,
             cache=args.cache,
             name=args.name,
+            resume=args.resume,
         )
     elif args.command == "eval":
         evaluate(args.model, args.data, args.device, args.imgsz)

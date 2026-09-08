@@ -1,4 +1,4 @@
-.PHONY: setup download build-dataset81 train train81 train-bg train81-bg eval predict dashboard dashboard-bg export clean help
+.PHONY: setup download build-dataset81 train train81 train-bg train81-bg resume81 resume-bg eval predict dashboard dashboard-bg export clean help
 
 PYTHON := python3
 VENV := venv
@@ -52,6 +52,15 @@ train81-bg: ## Train 81-class model in background (survives SSH disconnect) -> t
 		--workers $(WORKERS) \
 		--cache ram > train81.log 2>&1 &
 	@echo "Training started in background (PID $$!). Watch: tail -f train81.log"
+
+RESUME81 := $(shell test -f runs/autorickshaw81/weights/last.pt && echo runs/autorickshaw81/weights/last.pt || echo $$HOME/model_comparison_lab/runs/detect/runs/autorickshaw81/weights/last.pt)
+
+resume81: ## Resume 81-class training from last checkpoint (`make resume81`; or resume81-bg)
+	$(VENV)/bin/python src/train.py train --resume $(RESUME81)
+
+resume81-bg: ## Resume 81-class training in background -> train81.log
+	nohup $(VENV)/bin/python src/train.py train --resume $(RESUME81) > train81.log 2>&1 &
+	@echo "Resuming in background (PID $$!). Watch: tail -f train81.log"
 
 train: ## Train YOLOv8 medium (L40S defaults: imgsz 1280, batch auto, cache RAM)
 	$(VENV)/bin/python src/train.py train \
