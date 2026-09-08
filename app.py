@@ -7,8 +7,10 @@ from ultralytics import YOLO
 
 DEFAULT_WEIGHTS = "runs/autorickshaw/weights/best.pt"
 
-# Resolve the same model path used by train.py
+# Resolve the same model paths used by train.py (newest 81-class first, then 1-class)
 CANDIDATES = [
+    "runs/autorickshaw81/weights/best.pt",
+    Path.home() / "model_comparison_lab/runs/detect/runs/autorickshaw81/weights/best.pt",
     DEFAULT_WEIGHTS,
     Path.home() / "model_comparison_lab/runs/detect/runs/autorickshaw/weights/best.pt",
 ]
@@ -96,8 +98,9 @@ def main():
     model_path = Path(args.model)
     if not model_path.exists():
         for cand in CANDIDATES:
-            if Path(cand).exists():
-                model_path = Path(cand)
+            cand = Path(cand)
+            if cand.exists():
+                model_path = cand
                 break
     print(f"Loading model: {model_path}")
 
