@@ -12,8 +12,10 @@ OUT="${OUT:-$ROOT/dataset81}"              # merged 81-class dataset output dir
 WORK="${WORK:-$ROOT/.coco_cache}"          # scratch dir for downloads
 COCO_SUBSET="${COCO_SUBSET:-5000}"         # # val2017 images to use as rehearsal subset
 COCO_VAL="${COCO_VAL:-500}"                # # of those held out for validation
-LABELS_URL="https://ultralytics.com/assets/coco2017labels.zip"   # YOLO-format labels for train+val2017
+LABELS_URL="https://github.com/ultralytics/yolov5/releases/download/v1.0/coco2017labels.zip"  # stable YOLO-format labels
+LABELS_URL_FALLBACK="https://ultralytics.com/assets/coco2017labels.zip"
 IMAGES_URL="http://images.cocodataset.org/zips/val2017.zip"      # 1GB, 5000 images, covers all 80 classes
+CURL_OPTS="--retry 3 --connect-timeout 20 --retry-delay 3 -fL"
 
 echo "[1/4] Custom dataset check"
 if [ ! -d "$CUSTOM/train/images" ] || [ ! -d "$CUSTOM/val/images" ]; then
@@ -27,13 +29,14 @@ cd "$WORK"
 COCO_LABELS="$WORK/coco/labels/val2017"   # nested under coco/ in coco2017labels.zip
 [ ! -d "$COCO_LABELS" ] && COCO_LABELS="$WORK/labels/val2017"   # legacy flat fallback
 if [ ! -d "$COCO_LABELS" ]; then
-  curl -fL "$LABELS_URL" -o coco2017labels.zip
+  curl $CURL_OPTS "$LABELS_URL" -o coco2017labels.zip || \
+    curl $CURL_OPTS "$LABELS_URL_FALLBACK" -o coco2017labels.zip
   unzip -q -o coco2017labels.zip -d .
   # resolve whichever layout was extracted
   if [ -d "$WORK/coco/labels/val2017" ]; then COCO_LABELS="$WORK/coco/labels/val2017"; fi
 fi
 if [ ! -d "val2017" ]; then
-  curl -fL "$IMAGES_URL" -o val2017.zip
+  curl $CURL_OPTS "$IMAGES_URL" -o val2017.zip
   unzip -q -o val2017.zip -d .
 fi
 echo "  labels: $(ls "$COCO_LABELS" | wc -l) txt | images: $(ls val2017 | wc -l) jpg"
