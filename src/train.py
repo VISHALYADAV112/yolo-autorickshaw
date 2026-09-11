@@ -16,6 +16,14 @@ def train(
     project="runs",
     name="autorickshaw",
     resume=None,
+    mosaic=1.0,
+    mixup=0.0,
+    copy_paste=0.0,
+    degrees=0.0,
+    fliplr=0.5,
+    hsv_h=0.015,
+    hsv_s=0.7,
+    hsv_v=0.4,
 ):
     if resume is not None:
         print(f"Resuming training from checkpoint: {resume}")
@@ -60,6 +68,14 @@ def train(
         verbose=True,
         seed=42,
         plots=True,
+        mosaic=mosaic,
+        mixup=mixup,
+        copy_paste=copy_paste,
+        degrees=degrees,
+        fliplr=fliplr,
+        hsv_h=hsv_h,
+        hsv_s=hsv_s,
+        hsv_v=hsv_v,
     )
 
     print()
@@ -114,6 +130,15 @@ if __name__ == "__main__":
     train_parser.add_argument("--cache", default="ram", help="Cache mode: 'ram', 'disk', False")
     train_parser.add_argument("--name", default="autorickshaw", help="Run output folder name")
     train_parser.add_argument("--resume", default=None, help="Resume training from weights/last.pt checkpoint")
+    # augmentation controls (0 disables, 1 = max intensity)
+    train_parser.add_argument("--mosaic", type=float, default=1.0, help="Mosaic augmentation probability")
+    train_parser.add_argument("--mixup", type=float, default=0.0, help="MixUp augmentation probability")
+    train_parser.add_argument("--copy-paste", dest="copy_paste", type=float, default=0.0, help="Copy-paste augmentation")
+    train_parser.add_argument("--degrees", type=float, default=0.0, help="Random rotation degrees (0-180)")
+    train_parser.add_argument("--fliplr", type=float, default=0.5, help="Horizontal flip probability")
+    train_parser.add_argument("--hsv-h", dest="hsv_h", type=float, default=0.015, help="HSV-Hue augmentation")
+    train_parser.add_argument("--hsv-s", dest="hsv_s", type=float, default=0.7, help="HSV-Saturation augmentation")
+    train_parser.add_argument("--hsv-v", dest="hsv_v", type=float, default=0.4, help="HSV-Value augmentation")
 
     # Eval command
     eval_parser = subparsers.add_parser("eval", help="Evaluate the model")
@@ -145,6 +170,14 @@ if __name__ == "__main__":
             cache=args.cache,
             name=args.name,
             resume=args.resume,
+            mosaic=args.mosaic,
+            mixup=args.mixup,
+            copy_paste=args.copy_paste,
+            degrees=args.degrees,
+            fliplr=args.fliplr,
+            hsv_h=args.hsv_h,
+            hsv_s=args.hsv_s,
+            hsv_v=args.hsv_v,
         )
     elif args.command == "eval":
         evaluate(args.model, args.data, args.device, args.imgsz)

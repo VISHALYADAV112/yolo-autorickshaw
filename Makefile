@@ -1,4 +1,4 @@
-.PHONY: setup download build-dataset81 train train81 train-bg train81-bg resume81 resume-bg eval predict dashboard dashboard-bg export clean help
+.PHONY: setup download build-dataset81 save-models train train81 train-aug train-aug-bg train-bg train81-bg resume81 resume-bg resume-aug resume-aug-bg eval predict dashboard dashboard-bg export clean help
 
 PYTHON := python3
 VENV := venv
@@ -28,6 +28,9 @@ download: ## Download dataset from Roboflow (requires ROBOFLOW_API_KEY)
 build-dataset81: ## Build 81-class dataset: custom rickshaw + COCO rehearsal subset (~1GB download)
 	bash scripts/build_multiclass_dataset.sh
 
+save-models: ## Archive every trained model into models/ with descriptive names
+	bash scripts/save_models.sh
+
 train81: ## Train 81-class model: 80 COCO + Auto Rickshaw (pretrained yolov8m COCO base)
 	$(VENV)/bin/python src/train.py train \
 		--model $(MODEL) \
@@ -39,6 +42,33 @@ train81: ## Train 81-class model: 80 COCO + Auto Rickshaw (pretrained yolov8m CO
 		--device $(DEVICE) \
 		--workers $(WORKERS) \
 		--cache ram
+
+train-aug: ## 81-class boosted-augmentation run (mixup, rotations, color) — helps hard/difficult objects
+	$(VENV)/bin/python src/train.py train \
+		--model $(MODEL) \
+		--data dataset81/data.yaml \
+		--name autorickshaw-aug \
+		--epochs $(EPOCHS) \
+		--imgsz $(IMG_SIZE) \
+		--batch $(BATCH) \
+		--device $(DEVICE) \
+		--workers $(WORKERS) \
+		--cache ram \
+		--mosaic 1.0 --mixup 0.3 --copy-paste 0.5 --degrees 10 --fliplr 0.5
+
+train-aug-bg: ## 81-class augmented training in background -> train-aug.log
+	nohup $(VENV)/bin/python src/train.py train \
+		--model $(MODEL) \
+		--data dataset81/data.yaml \
+		--name autorickshaw-aug \
+		--epochs $(EPOCHS) \
+		--imgsz $(IMG_SIZE) \
+		--batch $(BATCH) \
+		--device $(DEVICE) \
+		--workers $(WORKERS) \
+		--cache ram \
+		--mosaic 1.0 --mixup 0.3 --copy-paste 0.5 --degrees 10 --fliplr 0.5 > train-aug.log 2>&1 &
+	@echo "Augmented training started in background (PID $$!). Watch: tail -f train-aug.log"
 
 train81-bg: ## Train 81-class model in background (survives SSH disconnect) -> train81.log
 	nohup $(VENV)/bin/python src/train.py train \
@@ -54,6 +84,14 @@ train81-bg: ## Train 81-class model in background (survives SSH disconnect) -> t
 	@echo "Training started in background (PID $$!). Watch: tail -f train81.log"
 
 RESUME81 := $(shell test -f runs/autorickshaw81/weights/last.pt && echo runs/autorickshaw81/weights/last.pt || echo $$HOME/model_comparison_lab/runs/detect/runs/autorickshaw81/weights/last.pt)
+RESUMEAUG := $(shell test -f runs/autorickshaw-aug/weights/last.pt && echo runs/autorickshaw-aug/weights/last.pt || echo $$HOME/model_comparison_lab/runs/detect/runs/autorickshaw-aug/weights/last.pt)
+
+resume-aug: ## Resume augmented 81-class training from last checkpoint
+	$(VENV)/bin/python src/train.py train --resume $(RESUMEAUG)
+
+resume-aug-bg: ## Resume augmented training in background -> train-aug.log
+	nohup $(VENV)/bin/python src/train.py train --resume $(RESUMEAUG) > train-aug.log 2>&1 &
+	@echo "Resuming augmented training in background (PID $$!). Watch: tail -f train-aug.log"
 
 resume81: ## Resume 81-class training from last checkpoint (`make resume81`; or resume81-bg)
 	$(VENV)/bin/python src/train.py train --resume $(RESUME81)
