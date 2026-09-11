@@ -95,13 +95,13 @@ def main():
     parser.add_argument("--share", action="store_true", help="Create a public share link")
     args = parser.parse_args()
 
-    model_path = Path(args.model)
-    if not model_path.exists():
-        for cand in CANDIDATES:
-            cand = Path(cand)
-            if cand.exists():
-                model_path = cand
-                break
+    # Prefer the newest trained weights (81-class first), regardless of --model.
+    model_path = next(
+        (Path(c) for c in CANDIDATES if Path(c).exists()),
+        None,
+    )
+    if model_path is None:
+        model_path = Path(args.model)  # stale fallback: whatever --model points to
     print(f"Loading model: {model_path}")
 
     model = load_model(str(model_path))
