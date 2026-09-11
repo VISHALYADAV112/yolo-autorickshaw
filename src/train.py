@@ -21,9 +21,13 @@ def train(
         print(f"Resuming training from checkpoint: {resume}")
         model = YOLO(resume)
         results = model.train(resume=True, project=project, name=name, exist_ok=True)
+        trainer = getattr(results, "trainer", None)
+        save_dir = trainer.save_dir if trainer is not None else Path(project) / name
         print()
         print(f"Training resumed and complete!")
-        print(f"Best model saved to: {project}/{name}/weights/best.pt")
+        print(f"Best model saved to: {save_dir}/weights/best.pt")
+        print(f"Last model saved to: {save_dir}/weights/last.pt")
+        print(f"Results plot: {save_dir}/results.png")
         return results
 
     print(f"Training YOLOv8 for {name} detection")
