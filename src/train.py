@@ -20,6 +20,8 @@ def train(
     mixup=0.0,
     copy_paste=0.0,
     degrees=0.0,
+    scale=0.0,
+    translate=0.0,
     fliplr=0.5,
     hsv_h=0.015,
     hsv_s=0.7,
@@ -72,6 +74,8 @@ def train(
         mixup=mixup,
         copy_paste=copy_paste,
         degrees=degrees,
+        scale=scale,
+        translate=translate,
         fliplr=fliplr,
         hsv_h=hsv_h,
         hsv_s=hsv_s,
@@ -135,6 +139,8 @@ if __name__ == "__main__":
     train_parser.add_argument("--mixup", type=float, default=0.0, help="MixUp augmentation probability")
     train_parser.add_argument("--copy-paste", dest="copy_paste", type=float, default=0.0, help="Copy-paste augmentation")
     train_parser.add_argument("--degrees", type=float, default=0.0, help="Random rotation degrees (0-180)")
+    train_parser.add_argument("--scale", type=float, default=0.0, help="Random scaling up/down (0.5 = +/-50% zoom)")
+    train_parser.add_argument("--translate", type=float, default=0.0, help="Random translation shift (fraction of image)")
     train_parser.add_argument("--fliplr", type=float, default=0.5, help="Horizontal flip probability")
     train_parser.add_argument("--hsv-h", dest="hsv_h", type=float, default=0.015, help="HSV-Hue augmentation")
     train_parser.add_argument("--hsv-s", dest="hsv_s", type=float, default=0.7, help="HSV-Saturation augmentation")
@@ -174,6 +180,8 @@ if __name__ == "__main__":
             mixup=args.mixup,
             copy_paste=args.copy_paste,
             degrees=args.degrees,
+            scale=args.scale,
+            translate=args.translate,
             fliplr=args.fliplr,
             hsv_h=args.hsv_h,
             hsv_s=args.hsv_s,

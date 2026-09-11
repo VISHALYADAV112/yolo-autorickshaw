@@ -54,7 +54,7 @@ train-aug: ## 81-class boosted-augmentation run (mixup, rotations, color) — he
 		--device $(DEVICE) \
 		--workers $(WORKERS) \
 		--cache ram \
-		--mosaic 1.0 --mixup 0.3 --copy-paste 0.5 --degrees 10 --fliplr 0.5
+		--mosaic 1.0 --mixup 0.3 --copy-paste 0.5 --degrees 10 --scale 1.0 --translate 0.2 --fliplr 0.5
 
 train-aug-bg: ## 81-class augmented training in background -> train-aug.log
 	nohup $(VENV)/bin/python src/train.py train \
@@ -67,7 +67,7 @@ train-aug-bg: ## 81-class augmented training in background -> train-aug.log
 		--device $(DEVICE) \
 		--workers $(WORKERS) \
 		--cache ram \
-		--mosaic 1.0 --mixup 0.3 --copy-paste 0.5 --degrees 10 --fliplr 0.5 > train-aug.log 2>&1 &
+		--mosaic 1.0 --mixup 0.3 --copy-paste 0.5 --degrees 10 --scale 1.0 --translate 0.2 --fliplr 0.5 > train-aug.log 2>&1 &
 	@echo "Augmented training started in background (PID $$!). Watch: tail -f train-aug.log"
 
 train81-bg: ## Train 81-class model in background (survives SSH disconnect) -> train81.log
