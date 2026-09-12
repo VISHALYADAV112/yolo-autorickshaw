@@ -9,6 +9,8 @@ DEFAULT_WEIGHTS = "runs/autorickshaw/weights/best.pt"
 
 # Resolve the same model paths used by train.py (newest 81-class first, then 1-class)
 CANDIDATES = [
+    "runs/autorickshaw-aug/weights/best.pt",
+    Path.home() / "model_comparison_lab/runs/detect/runs/autorickshaw-aug/weights/best.pt",
     "runs/autorickshaw81/weights/best.pt",
     Path.home() / "model_comparison_lab/runs/detect/runs/autorickshaw81/weights/best.pt",
     DEFAULT_WEIGHTS,
