@@ -9,6 +9,8 @@ BATCH := 16
 DEVICE := 0
 WORKERS := 16
 DATA := dataset/data.yaml
+SPLIT := val
+SAMPLES := 12
 PORT := 7860
 HOST := $(shell hostname -I 2>/dev/null | awk '{print $$1}')
 FORMAT := onnx
@@ -30,6 +32,10 @@ build-dataset81: ## Build 81-class dataset: custom rickshaw + COCO rehearsal sub
 
 save-models: ## Archive every trained model into models/ with descriptive names
 	bash scripts/save_models.sh
+
+view-dataset: ## Draw ground-truth boxes + class stats (make view-dataset DATA=dataset81/data.yaml SPLIT=train)
+	$(VENV)/bin/python scripts/view_dataset.py --data $(DATA) --split $(SPLIT) --samples $(SAMPLES)
+	@echo "Preview: runs/dataset_preview.jpg"
 
 train81: ## Train 81-class model: 80 COCO + Auto Rickshaw (pretrained yolov8m COCO base)
 	$(VENV)/bin/python src/train.py train \
